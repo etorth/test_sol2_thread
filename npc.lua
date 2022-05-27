@@ -12,7 +12,7 @@ function npc_main(uid)
         counterMax = 10
     else
         counter = 100
-        counterMax = 110
+        counterMax = 120
     end
 
     while counter < counterMax do
