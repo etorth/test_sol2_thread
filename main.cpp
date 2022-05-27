@@ -63,15 +63,17 @@ int main()
 #include "npc.lua"
     INCLUA_END(), sandbox_env);
 
-    lua["co_main"] = [&lua, &sandbox_env](sol::object arg)
+    lua.set_function("co_main", [&lua, &sandbox_env](sol::object arg)
     {
         char script_buf[2048];
         std::sprintf(script_buf, "npc_main(%d)", arg.as<int>());
         lua.script(script_buf, sandbox_env);
-    };
+    });
 
     LuaThreadRunner runner(lua, "co_main");
-    const auto result = runner.co_callback(120);
-    check_error(result);
+    while(runner.co_callback){
+        const auto result = runner.co_callback(12);
+        check_error(result);
+    }
     return 0;
 }
