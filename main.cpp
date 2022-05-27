@@ -59,18 +59,24 @@ int main()
     sandbox_env_metatable["__index"] = sol::function(lua["meta_index"]);
     sandbox_env_metatable["__newindex"] = sol::function(lua["meta_newindex"]);
 
+    // important hack to set sandbox_env as default environment
+    // otherwise I didn't know how to make LuaThreadRunner call with sandbox env
+
+    lua_rawgeti(lua, LUA_REGISTRYINDEX, sandbox_env.registry_index());
+    lua_rawseti(lua, LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS);
+
     lua.script(INCLUA_BEGIN(char)
 #include "npc.lua"
-    INCLUA_END(), sandbox_env);
+    INCLUA_END());
 
-    lua.set_function("co_main", [&lua, &sandbox_env](sol::object arg)
-    {
-        char script_buf[2048];
-        std::sprintf(script_buf, "npc_main(%d)", arg.as<int>());
-        lua.script(script_buf, sandbox_env);
-    });
+    // lua.set_function("co_main", [&lua, &sandbox_env](sol::object arg)
+    // {
+    //     char script_buf[2048];
+    //     std::sprintf(script_buf, "npc_main(%d)", arg.as<int>());
+    //     lua.script(script_buf, sandbox_env);
+    // });
 
-    LuaThreadRunner runner(lua, "co_main");
+    LuaThreadRunner runner(lua, "npc_main");
     while(runner.co_callback){
         const auto result = runner.co_callback(12);
         check_error(result);
