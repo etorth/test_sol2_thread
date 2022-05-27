@@ -61,7 +61,9 @@ int main()
 
     // idea from: https://blog.rubenwardy.com/2020/07/26/sol3-script-sandbox/
     // important hack to set sandbox_env as default environment
+    //
     // otherwise I didn't know how to make LuaThreadRunner call with sandbox env
+    // if we let co_main call back to C, I get error: attempt to yield from outside a coroutine
 
     lua_rawgeti(lua, LUA_REGISTRYINDEX, sandbox_env.registry_index());
     lua_rawseti(lua, LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS);
