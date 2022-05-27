@@ -2,22 +2,16 @@
 --
 
 function npc_main(uid)
-    do
-        local thId, inMainThread = coroutine.running()
-        -- if inMainThread then
-        --     error('npc_main() called in main thread', uid)
-        -- end
-        print(uid, thId, inMainThread)
+    local threadId, mainThread = coroutine.running()
+    if mainThread then
+        error('npc_main() called in main thread', uid)
     end
 
-    coroutine.yield()
-
-    do
-        local thId, inMainThread = coroutine.running()
-        -- if inMainThread then
-        --     error('npc_main() called in main thread', uid)
-        -- end
-        print(uid, thId, inMainThread)
+    local counter = 0
+    while counter < 10 do
+        print(counter)
+        counter = counter + 1
+        coroutine.yield()
     end
 end
 

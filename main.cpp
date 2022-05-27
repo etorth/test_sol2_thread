@@ -65,8 +65,8 @@ int main()
     // otherwise I didn't know how to make LuaThreadRunner call with sandbox env
     // if we let co_main call back to C, I get error: attempt to yield from outside a coroutine
 
-    lua_rawgeti(lua, LUA_REGISTRYINDEX, sandbox_env.registry_index());
-    lua_rawseti(lua, LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS);
+    lua_rawgeti(lua.lua_state(), LUA_REGISTRYINDEX, sandbox_env.registry_index());
+    lua_rawseti(lua.lua_state(), LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS);
 
     lua.script(INCLUA_BEGIN(char)
 #include "npc.lua"
