@@ -56,8 +56,8 @@ int main()
     sandbox_env[sol::metatable_key] = lua.create_table();
     sol::table sandbox_env_metatable = sandbox_env[sol::metatable_key];
 
-    sandbox_env_metatable["__index"] = sol::function(lua["meta_index"]);
-    sandbox_env_metatable["__newindex"] = sol::function(lua["meta_newindex"]);
+    sandbox_env_metatable["__index"] = sol::function(lua["sandBox_meta_index"]);
+    sandbox_env_metatable["__newindex"] = sol::function(lua["sandBox_meta_newindex"]);
 
     // idea from: https://blog.rubenwardy.com/2020/07/26/sol3-script-sandbox/
     // important hack to set sandbox_env as default environment

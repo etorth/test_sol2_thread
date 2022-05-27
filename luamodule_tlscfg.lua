@@ -83,7 +83,7 @@ local error = error
 local coroutine = coroutine
 
 local g_tlsTable = {}
-function meta_index(table, key)
+function sandBox_meta_index(table, key)
     local threadId, inMainThread = coroutine.running()
     if not inMainThread then
         if g_tlsTable[threadId] ~= nil and g_tlsTable[threadId][key] ~= nil then
@@ -94,7 +94,7 @@ function meta_index(table, key)
 end
 
 local rawset = rawset
-function meta_newindex(table, key, value)
+function sandBox_meta_newindex(table, key, value)
     local threadId, inMainThread = coroutine.running()
     if inMainThread then
         rawset(table, key, value)
