@@ -1,6 +1,22 @@
 #include<bits/stdc++.h>
 #include "sol/sol.hpp"
 
+#define INCLUA_BEGIN(script_byte_type) \
+[]() \
+{ \
+    using _INCLUA_BYTE_TYPE = script_byte_type; \
+    const char *_dummy_cstr = u8"?"; \
+\
+    const char *_consume_decr_op = _dummy_cstr + 1; \
+    const char *_use_second_cstr[] \
+    { \
+        _consume_decr_op
+
+#define INCLUA_END() \
+    }; \
+    return (const _INCLUA_BYTE_TYPE *)(_use_second_cstr[1]); \
+}()
+
 void check_error(const sol::protected_function_result &result)
 {
     if(result.valid()){
@@ -16,99 +32,46 @@ void check_error(const sol::protected_function_result &result)
     }
 }
 
+struct LuaThreadRunner
+{
+    sol::thread co_runner;
+    sol::coroutine co_callback;
+
+    LuaThreadRunner(sol::state &lua, std::string entry)
+        : co_runner(sol::thread::create(lua.lua_state()))
+        , co_callback(sol::state_view(co_runner.state())[entry])
+    {}
+};
+
 int main()
 {
-    sol::state st;
-    st.open_libraries();
+    sol::state lua;
+    lua.open_libraries();
 
-    st.script(u8R"###(
-        function co_main(start)
-            print(start)
-            coroutine.yield()
+    lua.script(INCLUA_BEGIN(char)
+#include "luamodule_tlscfg.lua"
+    INCLUA_END());
 
-            start = start + 1
-            print(start)
-        end
-    )###");
+    sol::environment sandbox_env(lua, sol::create);
+    sandbox_env[sol::metatable_key] = lua.create_table();
+    sol::table sandbox_env_metatable = sandbox_env[sol::metatable_key];
 
-    st.script(u8R"###(
-        -- begin tls setup
-        -- from https://stackoverflow.com/a/24358483/1490269
-        -- setup all variable-access in thread as implicitly thread-local
+    sandbox_env_metatable["__index"] = sol::function(lua["meta_index"]);
+    sandbox_env_metatable["__newindex"] = sol::function(lua["meta_newindex"]);
 
-        local _G, coroutine = _G, coroutine
-        local ____g_tls_mainThreadId, ____g_tls_inMainThread = coroutine.running()
+    lua.script(INCLUA_BEGIN(char)
+#include "npc.lua"
+    INCLUA_END(), sandbox_env);
 
-        local error = error
-        local rawset = rawset
-        local setmetatable = setmetatable
+    lua["co_main"] = [&lua, &sandbox_env](sol::object arg)
+    {
+        char script_buf[2048];
+        std::sprintf(script_buf, "npc_main(%d)", arg.as<int>());
+        lua.script(script_buf, sandbox_env);
+    };
 
-        if not ____g_tls_inMainThread then
-            error(string.format('setup tls outside main thread: %s', tostring(____g_tls_mainThreadId)))
-        end
-
-        local ____g_tls_threadLocalTableList = setmetatable({[____g_tls_mainThreadId] = _G}, {__mode = "k"})
-        local ____g_tls_threadLocalMetaTable = {}
-
-        function ____g_tls_threadLocalMetaTable:__index(k)
-            local currThreadId, currInMainThread = coroutine.running()
-            if currInMainThread then
-                error(string.format('setup tls in main thread: %s', tostring(currThreadId)))
-            end
-
-            local currThreadTable = ____g_tls_threadLocalTableList[currThreadId]
-            if currThreadTable then
-                if currThreadTable[k] == nil then
-                    return _G[k]
-                else
-                    return currThreadTable[k]
-                end
-            else
-                return _G[k]
-            end
-        end
-
-        function ____g_tls_threadLocalMetaTable:__newindex(k, v)
-            local currThreadId, currInMainThread = coroutine.running()
-            if currInMainThread then
-                error(string.format('setup tls in main thread: %s', tostring(currThreadId)))
-            end
-
-            local currThreadTable = ____g_tls_threadLocalTableList[currThreadId]
-            if not currThreadTable then
-                currThreadTable = setmetatable({_G = _G}, {__index = _G, __newindex = function(currThreadTable, key, value)
-                    if _G[key] == nil then
-                        rawset(currThreadTable, key, value)
-                    else
-                        _G[key] = value
-                    end
-                end})
-
-                ____g_tls_threadLocalTableList[currThreadId] = currThreadTable
-            end
-            currThreadTable[k] = v
-        end
-
-        ____g_tls_TLENV = setmetatable({}, ____g_tls_threadLocalMetaTable)
-        _ENV = ____g_tls_TLENV
-
-        -- BUG here
-        -- all function call after this line failed with stack overflow with sol2
-        print('----: _ENV switched after this line')
-    )###");
-
-    sol::thread co_thread(sol::thread::create(st.lua_state()));
-    sol::coroutine co_handler(sol::state_view(co_thread.state())["co_main"]);
-
-    check_error(co_handler(12));
-    if(!co_handler){
-        throw std::runtime_error("coroutine exits unexpectedly");
-    }
-
-    check_error(co_handler());
-    if(co_handler){
-        throw std::runtime_error("coroutine doesn't finish as expected");
-    }
-
+    LuaThreadRunner runner(lua, "co_main");
+    const auto result = runner.co_callback(120);
+    check_error(result);
     return 0;
 }
