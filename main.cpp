@@ -59,6 +59,7 @@ int main()
     sandbox_env_metatable["__index"] = sol::function(lua["meta_index"]);
     sandbox_env_metatable["__newindex"] = sol::function(lua["meta_newindex"]);
 
+    // idea from: https://blog.rubenwardy.com/2020/07/26/sol3-script-sandbox/
     // important hack to set sandbox_env as default environment
     // otherwise I didn't know how to make LuaThreadRunner call with sandbox env
 
