@@ -63,7 +63,7 @@ int main()
     // important hack to set sandbox_env as default environment
     //
     // otherwise I didn't know how to make LuaThreadRunner call with sandbox env
-    // if we let co_main call back to C, I get error: attempt to yield from outside a coroutine
+    // if we let npc_main call back to C, I get error: attempt to yield from outside a coroutine
 
     lua_rawgeti(lua.lua_state(), LUA_REGISTRYINDEX, sandbox_env.registry_index());
     lua_rawseti(lua.lua_state(), LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS);
@@ -72,17 +72,18 @@ int main()
 #include "npc.lua"
     INCLUA_END());
 
-    // lua.set_function("co_main", [&lua, &sandbox_env](sol::object arg)
-    // {
-    //     char script_buf[2048];
-    //     std::sprintf(script_buf, "npc_main(%d)", arg.as<int>());
-    //     lua.script(script_buf, sandbox_env);
-    // });
+    LuaThreadRunner runner1(lua, "npc_main");
+    runner1.co_callback(1);
 
-    LuaThreadRunner runner(lua, "npc_main");
-    while(runner.co_callback){
-        const auto result = runner.co_callback(12);
-        check_error(result);
+    LuaThreadRunner runner2(lua, "npc_main");
+    runner2.co_callback(2);
+
+    while(runner1.co_callback){
+        const auto result1 = runner1.co_callback();
+        check_error(result1);
+
+        const auto result2 = runner2.co_callback();
+        check_error(result2);
     }
     return 0;
 }

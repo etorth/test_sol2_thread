@@ -79,13 +79,40 @@
 -- coroutine.resume(co_handler)
 
 local _G = _G
+local error = error
+local coroutine = coroutine
+
+local g_tlsTable = {}
 function meta_index(table, key)
+    local threadId, inMainThread = coroutine.running()
+    if not inMainThread then
+        if g_tlsTable[threadId] ~= nil and g_tlsTable[threadId][key] ~= nil then
+            return g_tlsTable[threadId][key]
+        end
+    end
     return _G[key]
 end
 
 local rawset = rawset
 function meta_newindex(table, key, value)
-    rawset(table, key, value)
+    local threadId, inMainThread = coroutine.running()
+    if inMainThread then
+        rawset(table, key, value)
+    else
+        if g_tlsTable[threadId] == nil then
+            g_tlsTable[threadId] = {}
+        end
+        g_tlsTable[threadId][key] = value
+    end
+end
+
+function clearTLSTable()
+    local threadId, inMainThread = coroutine.running()
+    if inMainThread then
+        error('call clearTLSTable in main thread')
+    else
+        g_tlsTable[threadId] = nil
+    end
 end
 
 --
