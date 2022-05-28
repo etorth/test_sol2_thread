@@ -91,6 +91,12 @@ int main()
                 error('coth_main(runner) called in main thread', runner)
             end
 
+            -- test require
+            -- require should still work and accesses global variable: package
+
+            local mod = require('mod')
+            print(mod)
+
             coroutine.yield()
 
             counter = 0     -- localized global varible tested
