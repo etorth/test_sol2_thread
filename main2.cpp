@@ -121,7 +121,7 @@ int main()
             checkError(callback());
         }
         else{
-            std::cout << "runner " << index << " has existed" << std::endl;
+            std::cout << "runner " << index << " has exited" << std::endl;
         }
     };
 
