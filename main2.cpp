@@ -38,28 +38,6 @@ int main()
         local coroutine = coroutine
 
         local _G_sandbox = {}
-        function sandBox_meta_index(table, key)
-            local threadId, inMainThread = coroutine.running()
-            if not inMainThread then
-                if _G_sandbox[threadId] ~= nil and _G_sandbox[threadId][key] ~= nil then
-                    return _G_sandbox[threadId][key]
-                end
-            end
-            return _G[key]
-        end
-
-        function sandBox_meta_newindex(table, key, value)
-            local threadId, inMainThread = coroutine.running()
-            if inMainThread then
-                _G[key] = value
-            else
-                if _G_sandbox[threadId] == nil then
-                    _G_sandbox[threadId] = {}
-                end
-                _G_sandbox[threadId][key] = value
-            end
-        end
-
         function clearTLSTable()
             local threadId, inMainThread = coroutine.running()
             if inMainThread then
@@ -68,19 +46,39 @@ int main()
                 _G_sandbox[threadId] = nil
             end
         end
+
+        replaceEnv_metatable = {
+            __index = function(table, key)
+                local threadId, inMainThread = coroutine.running()
+                if not inMainThread then
+                    if _G_sandbox[threadId] ~= nil and _G_sandbox[threadId][key] ~= nil then
+                        return _G_sandbox[threadId][key]
+                    end
+                end
+                return _G[key]
+            end,
+
+            __newindex = function(table, key, value)
+                local threadId, inMainThread = coroutine.running()
+                if inMainThread then
+                    _G[key] = value
+                else
+                    if _G_sandbox[threadId] == nil then
+                        _G_sandbox[threadId] = {}
+                    end
+                    _G_sandbox[threadId][key] = value
+                end
+            end
+        }
     )");
 
-    sol::environment hack_env(lua, sol::create);
-    hack_env[sol::metatable_key] = lua.create_table();
-    sol::table hack_env_metatable = hack_env[sol::metatable_key];
-
-    hack_env_metatable["__index"] = sol::function(lua["sandBox_meta_index"]);
-    hack_env_metatable["__newindex"] = sol::function(lua["sandBox_meta_newindex"]);
+    sol::environment replaceEnv(lua, sol::create);
+    replaceEnv[sol::metatable_key] = sol::table(lua["replaceEnv_metatable"]);
 
     // idea from: https://blog.rubenwardy.com/2020/07/26/sol3-script-sandbox/
-    // set hack_env as default environment, otherwise I don't know how to setup hack_env to thread/coroutine
+    // set replaceEnv as default environment, otherwise I don't know how to setup replaceEnv to thread/coroutine
 
-    lua_rawgeti(lua.lua_state(), LUA_REGISTRYINDEX, hack_env.registry_index());
+    lua_rawgeti(lua.lua_state(), LUA_REGISTRYINDEX, replaceEnv.registry_index());
     lua_rawseti(lua.lua_state(), LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS);
 
     lua.script(R"(
