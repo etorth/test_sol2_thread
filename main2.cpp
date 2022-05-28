@@ -52,7 +52,7 @@ int main()
         function sandBox_meta_newindex(table, key, value)
             local threadId, inMainThread = coroutine.running()
             if inMainThread then
-                rawset(table, key, value)
+                rawset(_G, key, value)
             else
                 if _G_sandbox[threadId] == nil then
                     _G_sandbox[threadId] = {}
