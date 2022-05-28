@@ -35,7 +35,6 @@ int main()
     lua.script(R"(
         local _G = _G
         local error = error
-        local rawset = rawset
         local coroutine = coroutine
 
         local _G_sandbox = {}
@@ -52,7 +51,7 @@ int main()
         function sandBox_meta_newindex(table, key, value)
             local threadId, inMainThread = coroutine.running()
             if inMainThread then
-                rawset(_G, key, value)
+                _G[key] = value
             else
                 if _G_sandbox[threadId] == nil then
                     _G_sandbox[threadId] = {}
