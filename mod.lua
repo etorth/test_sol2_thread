@@ -1,7 +1,12 @@
-local M = {}
+local mod = {}
+local g_counter = 0
 
-M.f = function(arg)
-    print(arg)
+function mod.getCounter()
+    return g_counter
 end
 
-return M
+function mod.addCounter(arg)
+    g_counter = g_counter + arg
+end
+
+return mod

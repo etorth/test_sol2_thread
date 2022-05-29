@@ -92,7 +92,7 @@ int main()
             -- require should still work and accesses global variable: package
 
             local mod = require('mod')
-            print(mod)
+            print('module address: ', mod)
 
             coroutine.yield()
 
@@ -100,8 +100,10 @@ int main()
             counterMax = 10 --
 
             while counter < counterMax do
-                print(string.format('runner %d counter %d, you can resume %d more times', runner, counter, counterMax - counter - 1))
                 counter = counter + 1
+                mod.addCounter(runner)
+
+                print(string.format('runner %d counter %d, you can resume %d more times, mod.counter %2d', runner, counter, counterMax - counter, mod.getCounter()))
                 coroutine.yield()
             end
 
