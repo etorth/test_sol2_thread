@@ -48,7 +48,7 @@ int main()
         end
 
         replaceEnv_metatable = {
-            __index = function(table, key)
+            __index = function(_, key)
                 local threadId, inMainThread = coroutine.running()
                 if not inMainThread then
                     if _G_sandbox[threadId] ~= nil and _G_sandbox[threadId][key] ~= nil then
@@ -58,7 +58,7 @@ int main()
                 return _G[key]
             end,
 
-            __newindex = function(table, key, value)
+            __newindex = function(_, key, value)
                 local threadId, inMainThread = coroutine.running()
                 if inMainThread then
                     _G[key] = value
@@ -97,7 +97,7 @@ int main()
             coroutine.yield()
 
             counter = 0     -- localized global varible tested
-            counterMax = 10 --
+            counterMax = 5 --
 
             while counter < counterMax do
                 counter = counter + 1

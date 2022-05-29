@@ -1,5 +1,7 @@
 local mod = {}
-local g_counter = 0
+-- local g_counter = 0 -- global
+-- g_counter = 0 -- error
+_G.g_counter = 0 -- thread_local
 
 function mod.getCounter()
     return g_counter
